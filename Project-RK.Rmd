@@ -1,0 +1,211 @@
+---
+title: "Data Programming Project"
+author: "Riste Kocev"
+generator: pandoc
+viewport: "width=device-width, initial-scale=1"
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+::: {.container-fluid .main-container}
+::: {#header}
+# Spotify Top 50 Songs {#spotify-top-50-songs .title .toc-ignore}
+
+#### Data Programming Project 2023 {#data-ptogramming-2023 .author}
+:::
+
+::: {#section .section .level2 .tabset}
+##  {.tabset}
+
+# Introduction
+
+In this project, we will analyze the "Spotify Top 50 Songs" dataset. The dataset consists of information about the top 50 songs from Spotify playlists in various countries. We will perform data aggregation, exploratory data analysis, and visualize the data using the tidyverse approach in R.
+
+The main objective is to gain insights into the characteristics of the top songs, such as their popularity, duration, and release date. We will also explore relationships between different variables and identify any trends or patterns.
+
+# Presentation of the Data
+
+Let's start by loading the dataset and presenting the head of the dataframes, along with the data types and a brief explanation of each column.
+
+```{r}
+library(tidyverse)
+
+spotify_data <- read_csv("spotify-streaming-top-50-world.csv")
+
+head(spotify_data)
+```
+
+The dataset contains the following columns:
+
+-   `date`: The date when the data was collected in the format "yyyy-mm-dd".
+-   `position`: The position of the song in the Spotify playlist (ranging from 1 to 50).
+-   `song`: The name of the song.
+-   `artist`: The name of the artist(s) of the song. If multiple artists are involved, they are separated by "&".
+-   `popularity`: The popularity metric given by Spotify's API, indicating how popular the song is.
+-   `duration_ms`: The duration of the song in milliseconds.
+-   `album_type`: The type of album (e.g., single, album, etc.).
+-   `total_tracks`: The total number of tracks in the record.
+-   `release_date`: The date when the song was released.
+-   `is_explicit`: A boolean value indicating whether the song contains explicit content (True/False).
+-   `album_cover_url`: The URL containing the image of the album cover of the song.
+
+Now that we have an overview of the dataset, let's move on to aggregating the data to gain further insights.
+
+# Aggregation of Data
+
+For the aggregation of data, we will perform some summarization operations to obtain meaningful information. Let's showcase at least three aggregations using the `dplyr` package.
+
+```{r}
+# Table 1: Average Popularity by Album Type
+avg_popularity_by_album <- spotify_data %>%
+  group_by(album_type) %>%
+  summarise(avg_popularity = mean(popularity))
+
+# Table 2: Total Number of Songs by Album Type
+total_songs_by_album <- spotify_data %>%
+  group_by(album_type) %>%
+  summarise(total_songs = n())
+
+# Table 3: Top 10 Artists with Most Songs
+top_10_artists <- spotify_data %>%
+  group_by(artist) %>%
+  summarise(total_songs = n()) %>%
+  top_n(10, total_songs) %>%
+  arrange(desc(total_songs))
+
+# Print the output tables
+cat("Table 1: Average Popularity by Album Type\n")
+print(avg_popularity_by_album)
+
+cat("\nTable 2: Total Number of Songs by Album Type\n")
+print(total_songs_by_album)
+
+cat("\nTable 3: Top 10 Artists with Most Songs\n")
+print(top_10_artists)
+
+```
+
+These aggregations provide insights into the average popularity by album type, the total number of songs per artist, and the total number of songs per release year. Now, let's move on to exploratory data analysis and visualize the data.
+
+# Exploratory Data Analysis
+
+For exploratory data analysis, we will create at least three relevant and distinct ggplots to visualize different aspects of the data.
+
+## Plot 1: Popularity Distribution
+
+```{r}
+popularity_distribution <- spotify_data %>%
+  ggplot(aes(x = popularity)) +
+  geom_histogram(fill = "steelblue", bins = 20) +
+  labs(title = "Popularity Distribution",
+       x = "Popularity",
+       y = "Count")
+
+popularity_distribution
+```
+
+The first plot represents the distribution of song popularity. It helps us understand the range and frequency of popularity scores among the top songs.
+
+## Plot 2: Average Song Duration by Album Type
+
+```{r}
+avg_duration_by_album <- spotify_data %>%
+  mutate(album_type = fct_infreq(album_type)) %>%
+  ggplot(aes(x = album_type, y = duration_ms / 60000, fill = album_type)) +
+  stat_summary(fun = mean, geom = "bar") +
+  labs(title = "Average Song Duration by Album Type",
+       x = "Album Type",
+       y = "Duration (minutes)",
+       fill = "Album Type")
+
+avg_duration_by_album
+```
+
+The second plot illustrates the average song duration categorized by album type. It allows us to compare the average durations of songs in different album types.
+
+## Plot 3: Song Popularity Over Time
+
+```{r}
+song_popularity_over_time <- spotify_data %>%
+  mutate(release_year = lubridate::year(release_date)) %>%
+  ggplot(aes(x = release_year, y = popularity, color = album_type)) +
+  geom_smooth(method = "lm") +  # Adjust the smoothing method
+  labs(title = "Song Popularity Over Time",
+       x = "Release Year",
+       y = "Popularity",
+       color = "Album Type")
+
+song_popularity_over_time
+```
+
+The third plot showcases how song popularity has evolved over time. By plotting the trend lines for different album types, we can observe any variations in popularity over the years.
+
+## Plot 4: Distribution of Song Popularity
+
+```{r}
+# Plot 4: Distribution of Song Popularity
+popularity_distribution <- spotify_data %>%
+  ggplot(aes(x = popularity)) +
+  geom_histogram(binwidth = 5, fill = "skyblue", color = "black") +
+  labs(
+    title = "Distribution of Song Popularity",
+    x = "Popularity",
+    y = "Count"
+  )
+
+popularity_distribution
+```
+
+In the fourth plot the `popularity_distribution` (histogram) displays the distribution of song popularity. The x-axis represents the popularity values, and the y-axis represents the count of songs falling within each popularity bin.
+
+## Plot 5: Top 10 Artists by Total Song Duration
+
+```{r}
+top_10_artists_duration <- spotify_data %>%
+  group_by(artist) %>%
+  summarise(total_duration = sum(duration_ms) / 60000) %>%
+  top_n(10, total_duration) %>%
+  arrange(desc(total_duration)) %>%
+  ggplot(aes(x = reorder(artist, total_duration), y = total_duration)) +
+  geom_bar(stat = "identity", fill = "skyblue", color = "black") +
+  labs(
+    title = "Top 10 Artists by Total Song Duration",
+    x = "Artist",
+    y = "Total Song Duration (minutes)"
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+top_10_artists_duration
+```
+
+In the fifth plot there is the`top_10_artists_duration` bar chart that showcases the top 10 artists based on the total duration of their songs.The x-axis represents the artist names, and the y-axis represents the total song duration in minutes.
+
+# Interpretation / Conclusion
+
+In this analysis of the Spotify Top 50 Songs dataset, we explored the
+data and gained insights into various aspects of the songs. Here are
+some key findings:
+
+-   Average Popularity by Album Type: We aggregated the data by album type and found that songs categorized as "album" tend to have a higher average popularity compared to other album types. This suggests that albums as a whole may receive more attention and popularity from listeners.
+
+-   Total Number of Songs by Album Type: By grouping the data by album type, we determined the total number of songs available in each category. This information provides an understanding of the distribution of songs across different album types and helps identify trends in the dataset.
+
+-   Top 10 Artists with Most Songs: We examined the artists' contribution to the dataset by counting the number of songs by each artist. The resulting list of the top 10 artists with the most songs provides an overview of the artists who have a significant presence in the Spotify Top 50 Songs.
+
+-   Distribution of Song Popularity: The histogram plot visualized the distribution of song popularity. It shows how popularity values are distributed among the songs in the dataset, providing insights into the overall popularity patterns.
+
+-   Top 10 Artists by Total Song Duration: Another plot highlighted the top 10 artists based on the total duration of their songs. This metric helps identify the artists whose songs contribute the most to the overall duration and indicates their potential impact and presence in the dataset.
+
+These findings contribute to a better understanding of the Spotify Top 50 Songs dataset, shedding light on album types, artist contributions, song popularity, and song durations.
+
+# References
+
+-   Dataset: [Kaggle - Spotify Top 50 Playlist
+    Songs](https://www.kaggle.com/datasets/anxods/spotify-top-50-playlist-songs-anxods)
+-   Additional R packages used: `tidyverse`, `lubridate`, `glmnet`.
+
+
+
+:::
+:::
